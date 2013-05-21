@@ -22,11 +22,11 @@
 
 #if defined(TELEMETRY_FRSKY)
 
-#ifdef TELEMETRY_FRSKY_SOFTSERIAL
+#ifdef TELEMETRY_FRSKY_SOFTSERIAL_PIN
 
 #include "SendOnlySoftwareSerial.h"
 
-static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL, true, true);
+static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, true);
 
 #endif
 
@@ -110,7 +110,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL, true, true
 
    void inline write_FrSky8(uint8_t Data)
    {
-#ifdef TELEMETRY_FRSKY_SOFTSERIAL
+#ifdef TELEMETRY_FRSKY_SOFTSERIAL_PIN
       telemSerial.write(Data);
 #else
       SerialWrite(TELEMETRY_FRSKY_SERIAL, Data);
@@ -412,7 +412,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL, true, true
 
 void init_telemetry()
 {
-#ifdef TELEMETRY_FRSKY_SOFTSERIAL
+#ifdef TELEMETRY_FRSKY_SOFTSERIAL_PIN
   telemSerial.begin(TELEMETRY_FRSKY_SERIAL);
 #endif
 }
