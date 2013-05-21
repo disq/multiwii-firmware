@@ -25,7 +25,7 @@
 
 #include "SendOnlySoftwareSerial.h"
 
-static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL, true);
+static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL, true, true);
 
 #endif
 
