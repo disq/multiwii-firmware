@@ -1,7 +1,9 @@
 // ****************************************************************
 // FrSky telemetry
 // Changes:
-// 2013-05-21 by disq - make it work with 2.2 r1424 (2.2.1)
+// 2013-05-21 by disq
+//                                - make it work with 2.2 r1424 (2.2.1)
+//                                - softserial support, frees up a serial port also eliminates the need to use a ttl inverter
 // April 2013 by QuadBow - works with 2.2
 //                                - compatible with display FLD-02
 //                                - improved speed (to be sent in knots)
@@ -19,6 +21,15 @@
 // ****************************************************************
 
 #if defined(TELEMETRY_FRSKY)
+
+#ifdef TELEMETRY_FRSKY_SOFTSERIAL
+
+#include "SendOnlySoftwareSerial.h"
+
+static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL, true);
+
+#endif
+
   // Frame protocol
   #define Protocol_Header    0x5E
   #define Protocol_Tail      0x5E
@@ -99,7 +110,11 @@
 
    void inline write_FrSky8(uint8_t Data)
    {
+#ifdef TELEMETRY_FRSKY_SOFTSERIAL
+      telemSerial.write(Data);
+#else
       SerialWrite(TELEMETRY_FRSKY_SERIAL, Data);
+#endif
    }
 
    void inline write_FrSky16(uint16_t Data)
@@ -394,5 +409,12 @@
       sendDataHead(ID_Current);
       write_FrSky16(Data_Voltage_I_Motor);
    }
+
+void init_telemetry()
+{
+#ifdef TELEMETRY_FRSKY_SOFTSERIAL
+  telemSerial.begin(TELEMETRY_FRSKY_SERIAL);
+#endif
+}
 
 #endif

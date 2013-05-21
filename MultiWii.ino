@@ -932,6 +932,10 @@ void setup() {
     //plog.running = 0;       // toggle on arm & disarm to monitor for clean shutdown vs. powercut
   #endif
 
+  #if defined(TELEMETRY_FRSKY)
+    init_telemetry();
+  #endif
+
   debugmsg_append_str("initialization completed\n");
 }
 
