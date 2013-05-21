@@ -330,8 +330,11 @@ static int16_t  annex650_overrun_count = 0;
   static uint8_t pMeterV;                  // dummy to satisfy the paramStruct logic in ConfigurationLoop()
   static uint32_t pAlarm;                  // we scale the eeprom value from [0:255] to this value we can directly compare to the sum in pMeter[6]
   static uint16_t powerValue = 0;          // last known current
+  static uint16_t pCurrent;
+  static uint16_t pCurInit = 0;            // current at arming#endif
 #endif
 static uint16_t intPowerTrigger1;
+static uint16_t rpm = 0;
 
 // **********************
 // telemetry
@@ -481,6 +484,13 @@ static struct {
 } plog;
 #endif
 
+#ifdef TELEMETRY_FRSKY    // FRSKY extension
+static struct {
+  uint8_t TimerStart;
+  uint32_t armingTime;
+} showTime;
+#endif
+
 // **********************
 // GPS common variables
 // **********************
@@ -606,7 +616,8 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
       p = psum / PSENSOR_SMOOTH;
     #endif
     powerValue = ( conf.psensornull > p ? conf.psensornull - p : p - conf.psensornull); // do not use abs(), it would induce implicit cast to uint and overrun
-    if ( powerValue > 307) powerValue = 307;  // only accept reasonable values. 307 is empirical
+    if ( powerValue > I_MAX) powerValue = I_MAX;  // only accept reasonable values.
+    pCurrent = (powerValue * PINT2mA + pCurrent) / 2;  // result in 0.01A steps
     pMeter[PMOTOR_SUM] += ((currentTime-lastRead) * (uint32_t)(powerValue*conf.pint2ma))/100000; // [10 mA * msec]
     lastRead = currentTime;
     break;
@@ -635,6 +646,27 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
           analog.vbat = ((vsum /VBAT_SMOOTH) * 16) / conf.vbatscale; // result is Vbatt in 0.1V steps
         #endif
       #endif
+      #if defined(KV_MOTOR)
+      uint8_t vdelta = 0;
+      float    frpm;
+      for (uint8_t i=0; i<NUMBER_MOTOR; i++)
+          {
+          rpm += motor[i] - MINCOMMAND;
+          }
+    if (analog.vbat > 50) {
+       #if defined(POWERMETER)
+           vdelta = (uint8_t) (((R_MOTOR / NUMBER_MOTOR) * ((pCurrent - pCurInit) / 10)) / 1000);
+       #endif
+       #if defined(VBAT)
+           frpm = ((float) rpm * (float) (analog.vbat - vdelta) * KV_MOTOR) / ((float) NUMBER_MOTOR * 300.0 * (float) (MAXTHROTTLE - MINCOMMAND));
+       #else
+           frpm = ((float) rpm * VBATNOMINAL * KV_MOTOR) / ((float) NUMBER_MOTOR * 300.0 * (float) (MAXTHROTTLE - MINCOMMAND));
+       #endif
+       rpm = (uint16_t) frpm;
+       } else {
+       rpm = 0;
+       }
+    #endif
       break;
   }
   #endif // VBAT
@@ -705,6 +737,10 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
   #if defined(POWERMETER)
     analog.intPowerMeterSum = (pMeter[PMOTOR_SUM]/PLEVELDIV);
     intPowerTrigger1 = conf.powerTrigger1 * PLEVELSCALE; 
+  #endif
+
+  #if defined(TELEMETRY_FRSKY)      // FRSKY extension
+    telemetry_frsky();
   #endif
 
   #ifdef LCD_TELEMETRY_AUTO
@@ -922,6 +958,15 @@ void go_arm() {
           powerValueMaxMAH = 0;
         #endif
       #endif
+     #if defined (POWERMETER)
+       pCurInit = pCurrent;
+     #endif
+     #ifdef TELEMETRY_FRSKY       // FRSKY extension
+     if (!showTime.TimerStart) {
+        showTime.TimerStart = true;
+        showTime.armingTime = millis();
+        }
+     #endif
       #ifdef LOG_PERMANENT
         plog.arm++;           // #arm events
         plog.running = 1;       // toggle on arm & disarm to monitor for clean shutdown vs. powercut
@@ -937,6 +982,11 @@ void go_arm() {
 void go_disarm() {
   if (f.ARMED) {
     f.ARMED = 0;
+    #ifdef TELEMETRY_FRSKY    // FRSKY extension
+    if (showTime.TimerStart) {
+       showTime.TimerStart = false;
+       }
+    #endif
     #ifdef LOG_PERMANENT
       plog.disarm++;        // #disarm events
       plog.armed_time = armedTime ;   // lifetime in seconds
