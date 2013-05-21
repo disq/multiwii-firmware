@@ -54,6 +54,7 @@ private:
   uint16_t _tx_delay;
 
   uint16_t _inverse_logic;
+  uint16_t _errors_ok;
 
   // private methods
   void tx_pin_write(uint8_t pin_state);
@@ -64,7 +65,7 @@ private:
 
 public:
   // public methods
-  SendOnlySoftwareSerial(uint8_t transmitPin, bool inverse_logic = false);
+  SendOnlySoftwareSerial(uint8_t transmitPin, bool inverse_logic = false, bool errors_ok = false);
   ~SendOnlySoftwareSerial();
   void begin(long speed);
   void end();

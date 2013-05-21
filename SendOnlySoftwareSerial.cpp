@@ -176,9 +176,10 @@ void SendOnlySoftwareSerial::tx_pin_write(uint8_t pin_state)
 //
 // Constructor
 //
-SendOnlySoftwareSerial::SendOnlySoftwareSerial(uint8_t transmitPin, bool inverse_logic /* = false */) : 
+SendOnlySoftwareSerial::SendOnlySoftwareSerial(uint8_t transmitPin, bool inverse_logic /* = false */, bool errors_ok /* = false */) : 
   _tx_delay(0),
-  _inverse_logic(inverse_logic)
+  _inverse_logic(inverse_logic),
+  _errors_ok(errors_ok)
 {
   setTX(transmitPin);
 }
@@ -249,7 +250,9 @@ size_t SendOnlySoftwareSerial::write(uint8_t b)
   }
 
   uint8_t oldSREG = SREG;
-  cli();  // turn off interrupts for a clean txmit
+  if (!_errors_ok) {
+    cli();  // turn off interrupts for a clean txmit
+  }
 
   // Write the start bit
   tx_pin_write(_inverse_logic ? HIGH : LOW);
@@ -285,7 +288,9 @@ size_t SendOnlySoftwareSerial::write(uint8_t b)
     tx_pin_write(HIGH); // restore pin to natural state
   }
 
-  SREG = oldSREG; // turn interrupts back on
+  if (!_errors_ok) {
+    SREG = oldSREG; // turn interrupts back on
+  }
   tunedDelay(_tx_delay);
   
   return 1;
