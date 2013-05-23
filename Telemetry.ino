@@ -379,6 +379,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
    // Voltage (Ampere Sensor)
    void inline send_Voltage_ampere(void)
    {
+#ifdef VBAT
       uint16_t Data_Voltage_vBat_bp;
       uint16_t Data_Voltage_vBat_ap;
       uint16_t Data_Voltage_I_Motor;
@@ -398,6 +399,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
       write_FrSky16(Data_Voltage_vBat_ap);
       sendDataHead(ID_Current);
       write_FrSky16(Data_Voltage_I_Motor);
+#endif
    }
 
 void init_telemetry()
