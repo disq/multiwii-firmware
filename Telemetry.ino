@@ -281,19 +281,13 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
       uint16_t Data_Longitude_bp;
       uint16_t Data_Longitude_ap;
       uint16_t Data_E_W;
-      uint32_t temp, rest, grad;
 
       if (f.GPS_FIX && GPS_numSat >= 4)
          {
-         temp = abs(GPS_coord[LON]);
-         grad = temp / 10000000;
-         temp -= grad * 10000000;
-         temp *= 6;
-         rest = temp;
-         temp /= 1000000;
-         rest -= temp * 1000000;
-         Data_Longitude_bp = grad * 100 + temp;
-         Data_Longitude_ap = rest / 100;
+         float lon = GPS_coord[LON] / 10000000.0f * 100;
+         if (lon<0) lon = -lon; // abs() doesnt work?
+         Data_Longitude_bp = lon;
+         Data_Longitude_ap = (lon-int(lon))*10000;
          Data_E_W = GPS_coord[LON] < 0 ? 'W' : 'E';
 
          sendDataHead(ID_Longitude_bp);
@@ -310,19 +304,13 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
       uint16_t Data_Latitude_bp;
       uint16_t Data_Latitude_ap;
       uint16_t Data_N_S;
-      uint32_t temp, rest, grad;
 
       if (f.GPS_FIX && GPS_numSat >= 4)
          {
-         temp = abs(GPS_coord[LAT]);
-         grad = temp / 10000000;
-         temp -= grad * 10000000;
-         temp *= 6;
-         rest = temp;
-         temp /= 1000000;
-         rest -= temp * 1000000;
-         Data_Latitude_bp = grad * 100 + temp;
-         Data_Latitude_ap = rest / 100;
+         float lat = GPS_coord[LAT] / 10000000.0f * 100;
+         if (lat<0) lat = -lat; // abs() doesnt work?
+         Data_Latitude_bp = lat;
+         Data_Latitude_ap = (lat-int(lat))*10000;
          Data_N_S = GPS_coord[LAT] < 0 ? 'S' : 'N';
 
          sendDataHead(ID_Latitude_bp);
