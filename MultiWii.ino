@@ -331,7 +331,7 @@ static int16_t  annex650_overrun_count = 0;
   static uint32_t pAlarm;                  // we scale the eeprom value from [0:255] to this value we can directly compare to the sum in pMeter[6]
   static uint16_t powerValue = 0;          // last known current
   static uint16_t pCurrent;
-  static uint16_t pCurInit = 0;            // current at arming#endif
+  static uint16_t pCurInit = 0;            // current at arming
 #endif
 static uint16_t intPowerTrigger1;
 static uint16_t rpm = 0;
