@@ -179,6 +179,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
    // Temperature
    void inline send_Temperature(void)
    {
+#if defined(BARO)
       int16_t Data_Temperature1;
       int16_t Data_Temperature2;
 
@@ -188,6 +189,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
       write_FrSky16(Data_Temperature1);
       sendDataHead(ID_Temperature2);
       write_FrSky16(Data_Temperature2);
+#endif
    }
 
    // RPM
@@ -244,7 +246,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
    // Altitude
    void inline send_Altitude(void)
    {
-#if defined BARO
+#if defined(BARO)
       int16_t Data_altitude;
 
       Data_altitude = EstAlt / 100; // - Start_altitude;
@@ -376,7 +378,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
    // Voltage (Ampere Sensor)
    void inline send_Voltage_ampere(void)
    {
-#ifdef VBAT
+#if defined(VBAT)
       uint16_t Data_Voltage_vBat_bp;
       uint16_t Data_Voltage_vBat_ap;
       uint16_t Data_Voltage_I_Motor;
@@ -400,7 +402,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
 
 void init_telemetry()
 {
-#ifdef TELEMETRY_FRSKY_SOFTSERIAL_PIN
+#if defined(TELEMETRY_FRSKY_SOFTSERIAL_PIN)
   telemSerial.begin(TELEMETRY_FRSKY_SERIAL);
 #endif
 }
