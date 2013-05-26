@@ -108,7 +108,7 @@ void computeIMU () {
 #define INV_GYR_CMPF_FACTOR   (1.0f / (GYR_CMPF_FACTOR  + 1.0f))
 #define INV_GYR_CMPFM_FACTOR  (1.0f / (GYR_CMPFM_FACTOR + 1.0f))
 
-#define GYRO_SCALE ((2279 * PI)/((32767.0f / 4.0f ) * 180.0f * 1000000.0f)) //(ITG3200 and MPU6050)
+//#define GYRO_SCALE ((2279 * PI)/((32767.0f / 4.0f ) * 180.0f * 1000000.0f)) //(ITG3200 and MPU6050) //moved to def.h, backport from r1451 --disq
 // +-2000/sec deg scale
 // for WMP, empirical value should be #define GYRO_SCALE (1.0f/200e6f)
 // !!!!should be adjusted to the rad/sec and be part defined in each gyro sensor

@@ -1826,3 +1826,20 @@
 #if defined(LCD_TELEMETRY_STEP) && !(defined(LCD_TELEMETRY))
         #error "to use single step telemetry, you MUST also define and configure LCD_TELEMETRY"
 #endif
+
+//backport from r1451
+#if defined(ITG3200)
+  #define GYRO_SCALE (4 / 14.375 * PI / 180.0 / 1000000.0) //ITG3200   14.375 LSB/(deg/s) and we ignore the last 2 bits
+#endif
+#if defined(L3G4200D)
+  #define GYRO_SCALE ((4.0f * PI * 70.0f)/(1000.0f * 180.0f * 1000000.0f))
+#endif
+#if defined(MPU6050)
+  #define GYRO_SCALE (4 / 16.4 * PI / 180.0 / 1000000.0)   //MPU6050 and MPU3050   16.4 LSB/(deg/s) and we ignore the last 2 bits
+#endif
+#if defined(MPU3050)
+  #define GYRO_SCALE (4 / 16.4 * PI / 180.0 / 1000000.0)   //MPU6050 and MPU3050   16.4 LSB/(deg/s) and we ignore the last 2 bits
+#endif
+#if defined(WMP)
+  #define GYRO_SCALE (1.0f/200e6f)
+#endif
