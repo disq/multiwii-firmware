@@ -381,7 +381,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
       uint16_t Data_Voltage_vBat_ap;
       uint16_t Data_Voltage_I_Motor;
 
-     uint16_t volts = analog.vbat * 110 / 21; // tested with OpenTx
+     uint16_t volts = vbat * 110 / 21; // tested with OpenTx
      Data_Voltage_vBat_bp = volts / 100;
      Data_Voltage_vBat_ap = (volts % 100) / 10;
 
