@@ -195,12 +195,14 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
    // RPM
    void inline send_RPM(void)
    {
+#if defined(KV_MOTOR)
       uint16_t Data_RPM = 0;
 
       Data_RPM = rpm;
 
       sendDataHead(ID_RPM);
       write_FrSky16(Data_RPM);
+#endif
    }
 
    // Fuel level

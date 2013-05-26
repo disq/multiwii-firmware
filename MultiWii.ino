@@ -299,7 +299,9 @@ static int16_t  annex650_overrun_count = 0;
   static uint16_t pCurInit = 0;            // current at arming
 #endif
 static uint16_t intPowerMeterSum, intPowerTrigger1;
-static uint16_t rpm = 0;
+#if defined(KV_MOTOR)
+  static uint16_t rpm = 0;
+#endif
 
 // **********************
 // telemetry
@@ -592,7 +594,7 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
         rpm += motor[i] - MINCOMMAND;
         }
   if (vbat > 50) {
-     #if defined(POWERMETER)
+     #if defined(POWERMETER) && defined(R_MOTOR)
          vdelta = (uint8_t) (((R_MOTOR / NUMBER_MOTOR) * ((pCurrent - pCurInit) / 10)) / 1000);
      #endif
      #if defined(VBAT)
