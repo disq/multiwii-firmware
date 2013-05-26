@@ -19,6 +19,9 @@
  *    Changing those values in config.h and upload will require a 'Reset' from the GUI to take effect
  */
 
+/* April 2013 by QuadBow
+   FRSKY telemetry extention
+*/
 
 /*************************************************************************************************/
 /*****************                                                                 ***************/
@@ -485,7 +488,7 @@
     #define SERIAL0_COM_SPEED 115200
     #define SERIAL1_COM_SPEED 115200
     #define SERIAL2_COM_SPEED 115200
-    #define SERIAL3_COM_SPEED 115200
+    #define SERIAL3_COM_SPEED   9600      // FRSKY telemetry
 
     /* interleaving delay in micro seconds between 2 readings WMP/NK in a WMP+NK config
        if the ACC calibration time is very long (20 or 30s), try to increase this delay up to 4000
@@ -845,6 +848,7 @@
     #define PLEVELDIVSOFT PLEVELDIV // for soft always equal to PLEVELDIV; for hard set to 5000
     #define PSENSORNULL 510 // (*) set to analogRead() value for zero current; for I=0A my sensor gives 1/2 Vss; that is approx 2.49Volt;
     #define PINT2mA 13 // (*) for telemtry display: one integer step on arduino analog translates to mA (example 4.9 / 37 * 100
+    #define I_MAX   400 // adc steps at highest current, reducing spikes, example: max. current results in 2V output => 1023/5V*2V=409 steps
 
   /********************************************************************/
   /****           altitude hold                                    ****/
@@ -1011,6 +1015,14 @@
     /* Enable string transmissions from copter to GUI */
     //#define DEBUGMSG
 
+  /**************************************************************************************/
+  /***********************                telemetry            **************************/
+  /**************************************************************************************/
+  // new code for FRSKY telemetry integration, see file telemetry.ino
+  #define TELEMETRY_FRSKY
+  #define TELEMETRY_FRSKY_SERIAL 3
+  #define KV_MOTOR          1000.0     // KV = RPM per Volt
+  #define R_MOTOR              162     // resistance of each motor in milliohm
 
   /********************************************************************/
   /****           ESCs calibration                                 ****/

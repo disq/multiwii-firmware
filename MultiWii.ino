@@ -8,6 +8,10 @@ March  2013     V2.2
  any later version. see <http://www.gnu.org/licenses/>
 */
 
+/* April 2013 by QuadBow
+   FRSKY telemetry extention
+*/
+
 #include <avr/io.h>
 
 #include "config.h"
@@ -291,8 +295,11 @@ static int16_t  annex650_overrun_count = 0;
   static uint8_t pMeterV;                  // dummy to satisfy the paramStruct logic in ConfigurationLoop()
   static uint32_t pAlarm;                  // we scale the eeprom value from [0:255] to this value we can directly compare to the sum in pMeter[6]
   static uint16_t powerValue = 0;          // last known current
+  static uint16_t pCurrent;
+  static uint16_t pCurInit = 0;            // current at arming
 #endif
 static uint16_t intPowerMeterSum, intPowerTrigger1;
+static uint16_t rpm = 0;
 
 // **********************
 // telemetry
@@ -446,6 +453,13 @@ static struct {
 } plog;
 #endif
 
+#ifdef TELEMETRY_FRSKY    // FRSKY extension
+static struct {
+  uint8_t TimerStart;
+  uint32_t armingTime;
+} showTime;
+#endif
+
 // **********************
 // GPS common variables
 // **********************
@@ -559,15 +573,37 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
       pMeterRaw =  analogRead(PSENSORPIN);
       //lcdprint_int16(pMeterRaw); LCDcrlf();
       powerValue = ( conf.psensornull > pMeterRaw ? conf.psensornull - pMeterRaw : pMeterRaw - conf.psensornull); // do not use abs(), it would induce implicit cast to uint and overrun
-      if ( powerValue < 333) {  // only accept reasonable values. 333 is empirical
+      if ( powerValue < I_MAX) {  // only accept reasonable values. 
       #ifdef LCD_TELEMETRY
         if (powerValue > powerMax) powerMax = powerValue;
       #endif
       } else {
-        powerValue = 333;
-      }        
+        powerValue = I_MAX;
+      }       
+      pCurrent = (powerValue * PINT2mA + pCurrent) / 2;  // result in 0.01A steps 
       pMeter[PMOTOR_SUM] += (uint32_t) powerValue;
     }
+  #endif
+    #if defined(KV_MOTOR) 
+    uint8_t vdelta = 0;
+    float    frpm;
+    for (uint8_t i=0; i<NUMBER_MOTOR; i++)
+        {
+        rpm += motor[i] - MINCOMMAND;
+        }
+  if (vbat > 50) {
+     #if defined(POWERMETER)
+         vdelta = (uint8_t) (((R_MOTOR / NUMBER_MOTOR) * ((pCurrent - pCurInit) / 10)) / 1000);
+     #endif
+     #if defined(VBAT)
+         frpm = ((float) rpm * (float) (vbat - vdelta) * KV_MOTOR) / ((float) NUMBER_MOTOR * 300.0 * (float) (MAXTHROTTLE - MINCOMMAND));
+     #else
+         frpm = ((float) rpm * VBATNOMINAL * KV_MOTOR) / ((float) NUMBER_MOTOR * 300.0 * (float) (MAXTHROTTLE - MINCOMMAND));
+     #endif
+     rpm = (uint16_t) frpm);
+     } else {
+     rpm = 0;
+     }
   #endif
   #if defined(BUZZER)
     #if defined(VBAT)
@@ -634,6 +670,10 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
   #if defined(POWERMETER)
     intPowerMeterSum = (pMeter[PMOTOR_SUM]/conf.pleveldiv);
     intPowerTrigger1 = conf.powerTrigger1 * PLEVELSCALE; 
+  #endif
+
+  #if defined(TELEMETRY_FRSKY)      // FRSKY extension
+    telemetry_frsky();
   #endif
 
   #ifdef LCD_TELEMETRY_AUTO
@@ -815,6 +855,15 @@ void go_arm() {
            BAROaltMax = BaroAlt;
         #endif
       #endif
+      #if defined (POWERMETER)
+        pCurInit = pCurrent;
+      #endif
+      #ifdef TELEMETRY_FRSKY       // FRSKY extension
+      if (!showTime.TimerStart) {
+         showTime.TimerStart = true;
+         showTime.armingTime = millis();
+         }
+      #endif
       #ifdef LOG_PERMANENT
         plog.arm++;           // #arm events
         plog.running = 1;       // toggle on arm & disarm to monitor for clean shutdown vs. powercut
@@ -830,6 +879,11 @@ void go_arm() {
 void go_disarm() {
   if (f.ARMED) {
     f.ARMED = 0;
+    #ifdef TELEMETRY_FRSKY    // FRSKY extension
+    if (showTime.TimerStart) {
+       showTime.TimerStart = false;
+       }
+    #endif
     #ifdef LOG_PERMANENT
       plog.disarm++;        // #disarm events
       plog.armed_time = armedTime ;   // lifetime in seconds
