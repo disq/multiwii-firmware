@@ -58,13 +58,13 @@
 
    // Main function FrSky telemetry
     void inline telemetry_frsky()
-   {         
+   {
       static uint32_t lastTime;
       static uint8_t tele_loop;
       if ((millis() - lastTime) > 250) {
          // Data sent every 250ms
          lastTime = millis();
-         tele_loop++;         
+         tele_loop++;
          send_Voltage_ampere();
          send_Accel();
          // Data sent every 1s
@@ -91,7 +91,7 @@
             default:
             break;
             }
-        sendDataTail();         
+        sendDataTail();
         }
    }
 
@@ -103,27 +103,27 @@
    void inline write_FrSky16(uint16_t Data)
    {
       uint8_t Data_send;
-      Data_send = Data;      
+      Data_send = Data;
       check_FrSky_stuffing(Data_send);
       Data_send = Data >> 8 & 0xff;
       check_FrSky_stuffing(Data_send);
    }
-   
+
    void inline check_FrSky_stuffing(uint8_t Data) //byte stuffing
    {
-      if (Data == 0x5E)   
+      if (Data == 0x5E)
       {
          write_FrSky8(0x5D);
          write_FrSky8(0x3E);
       }
-      else if (Data == 0x5D)   
+      else if (Data == 0x5D)
       {
          write_FrSky8(0x5D);
          write_FrSky8(0x3D);
       }
       else
       {
-         write_FrSky8(Data);         
+         write_FrSky8(Data);
       }
    }
 
@@ -135,16 +135,16 @@
 
    static void inline sendDataTail(void)
    {
-      write_FrSky8(Protocol_Tail);      
+      write_FrSky8(Protocol_Tail);
    }
 
    //*********************************************************************************
-   //-----------------   Telemetrie Data   ------------------------------------------   
+   //-----------------   Telemetrie Data   ------------------------------------------
    //*********************************************************************************
 
    // GPS altitude
    void inline send_GPS_altitude(void)
-   {         
+   {
       if (f.GPS_FIX && GPS_numSat >= 4)
       {
          int16_t Data_GPS_altitude_bp;
@@ -159,7 +159,7 @@
          write_FrSky16(Data_GPS_altitude_ap);
       }
    }
-   
+
    // Temperature
    void inline send_Temperature(void)
    {
@@ -178,7 +178,7 @@
    void inline send_RPM(void)
    {
       uint16_t Data_RPM = 0;
-     
+
       Data_RPM = rpm;
 
       sendDataHead(ID_RPM);
@@ -206,8 +206,8 @@
          Data_Distance = GPS_distanceToHome; // Distance to home alias Temp2
 
          sendDataHead(ID_Altitude);
-         write_FrSky16(Data_Distance); 
-      }     
+         write_FrSky16(Data_Distance);
+      }
    }
 
    // Cell voltage  todo !!!!!!!!!!!!!!!!!!
@@ -228,14 +228,14 @@
    // Altitude
    void inline send_Altitude(void)
    {
+#if defined BARO
       int16_t Data_altitude;
 
-      #if defined BARO
-        Data_altitude = EstAlt / 100; // - Start_altitude;
-      #endif
-      
+      Data_altitude = EstAlt / 100; // - Start_altitude;
+
       sendDataHead(ID_Altitude);
       write_FrSky16(Data_altitude);
+#endif
    }
 
    // GPS speed
@@ -246,11 +246,11 @@
       uint16_t temp;
 
       if (f.GPS_FIX && GPS_numSat >= 4)
-      {           
+      {
          temp = (GPS_speed * 40) / 203;
          Data_GPS_speed_bp = temp / 10;
          Data_GPS_speed_ap = temp - Data_GPS_speed_bp * 10;
-     
+
          sendDataHead(ID_GPS_speed_bp);
          write_FrSky16(Data_GPS_speed_bp);
          sendDataHead(ID_GPS_speed_ap);
@@ -265,9 +265,9 @@
       uint16_t Data_Longitude_ap;
       uint16_t Data_E_W;
       uint32_t temp, rest, grad;
-         
+
       if (f.GPS_FIX && GPS_numSat >= 4)
-         {           
+         {
          temp = abs(GPS_coord[LON]);
          grad = temp / 10000000;
          temp -= grad * 10000000;
@@ -296,7 +296,7 @@
       uint32_t temp, rest, grad;
 
       if (f.GPS_FIX && GPS_numSat >= 4)
-         {           
+         {
          temp = abs(GPS_coord[LAT]);
          grad = temp / 10000000;
          temp -= grad * 10000000;
@@ -313,7 +313,7 @@
          sendDataHead(ID_Latitude_ap);
          write_FrSky16(Data_Latitude_ap);
          sendDataHead(ID_N_S);
-         write_FrSky16(Data_N_S);     
+         write_FrSky16(Data_N_S);
          }
    }
 
@@ -342,7 +342,7 @@
       if (showTime.TimerStart) {
          seconds_since_start = (millis() - showTime.armingTime) / 1000;
          Data_Minutes_hours = seconds_since_start / 60;
-         Data_seconds = seconds_since_start - 60 * Data_Minutes_hours;     
+         Data_seconds = seconds_since_start - 60 * Data_Minutes_hours;
          sendDataHead(ID_Hour_Minute);
          write_FrSky16(Data_Minutes_hours * 256);
          sendDataHead(ID_Second);
@@ -366,30 +366,32 @@
       sendDataHead(ID_Acc_Y);
       write_FrSky16(Data_Acc_Y);
       sendDataHead(ID_Acc_Z);
-      write_FrSky16(Data_Acc_Z);     
+      write_FrSky16(Data_Acc_Z);
    }
 
-   // Voltage (Ampere Sensor) 
+   // Voltage (Ampere Sensor)
    void inline send_Voltage_ampere(void)
    {
+#ifdef VBAT
       uint16_t Data_Voltage_vBat_bp;
-      uint16_t Data_Voltage_vBat_ap;   
+      uint16_t Data_Voltage_vBat_ap;
       uint16_t Data_Voltage_I_Motor;
 
-      Data_Voltage_vBat_bp = vbat / 10;         
-      Data_Voltage_vBat_ap = vbat - Data_Voltage_vBat_bp * 10;         
-      #if defined(POWERMETER)
-        Data_Voltage_I_Motor = pCurrent / 10;
-      #else
-        Data_Voltage_I_Motor = 0;
-      #endif
+      Data_Voltage_vBat_bp = vbat / 10;
+      Data_Voltage_vBat_ap = vbat - Data_Voltage_vBat_bp * 10;
+
       sendDataHead(ID_Voltage_Amp_bp);
       write_FrSky16(Data_Voltage_vBat_bp);
       sendDataHead(ID_Voltage_Amp_ap);
-      write_FrSky16(Data_Voltage_vBat_ap);   
-      sendDataHead(ID_Current);
-      write_FrSky16(Data_Voltage_I_Motor);   
+      write_FrSky16(Data_Voltage_vBat_ap);
+
+      #if defined(POWERMETER)
+        Data_Voltage_I_Motor = pCurrent / 10;
+        sendDataHead(ID_Current);
+        write_FrSky16(Data_Voltage_I_Motor);
+      #endif
+#endif
    }
 
-#endif 
+#endif
 
