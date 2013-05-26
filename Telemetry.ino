@@ -287,8 +287,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
 
       if (f.GPS_FIX && GPS_numSat >= 4)
          {
-         float lon = GPS_coord[LON] / 10000000.0f * 100;
-         if (lon<0) lon = -lon; // abs() doesnt work?
+         float lon = fabs(GPS_coord[LON] / 10000000.0f * 100);
          Data_Longitude_bp = lon;
          Data_Longitude_ap = (lon-int(lon))*10000;
          Data_E_W = GPS_coord[LON] < 0 ? 'W' : 'E';
@@ -310,8 +309,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
 
       if (f.GPS_FIX && GPS_numSat >= 4)
          {
-         float lat = GPS_coord[LAT] / 10000000.0f * 100;
-         if (lat<0) lat = -lat; // abs() doesnt work?
+         float lat = fabs(GPS_coord[LAT] / 10000000.0f * 100);
          Data_Latitude_bp = lat;
          Data_Latitude_ap = (lat-int(lat))*10000;
          Data_N_S = GPS_coord[LAT] < 0 ? 'S' : 'N';
