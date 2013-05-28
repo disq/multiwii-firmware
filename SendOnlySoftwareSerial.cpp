@@ -60,6 +60,7 @@ typedef struct _DELAY_TABLE
 
 static const DELAY_TABLE PROGMEM table[] = 
 {
+#ifdef TELEMETRY_FRSKY_SOFTSERIAL_PIN
   //  baud    rxcenter   rxintra    rxstop    tx
 #if TELEMETRY_FRSKY_SERIAL==115200
   { 115200,   1,         17,        17,       12,    },
@@ -88,6 +89,7 @@ static const DELAY_TABLE PROGMEM table[] =
 #else
   #error "Invalid baud rate for TELEMETRY_FRSKY_SERIAL"
 #endif
+#endif
 };
 
 const int XMIT_START_ADJUSTMENT = 5;
@@ -96,6 +98,7 @@ const int XMIT_START_ADJUSTMENT = 5;
 
 static const DELAY_TABLE table[] PROGMEM = 
 {
+#ifdef TELEMETRY_FRSKY_SOFTSERIAL_PIN
   //  baud    rxcenter    rxintra    rxstop  tx
 #if TELEMETRY_FRSKY_SERIAL==115200
   { 115200,   1,          5,         5,      3,      },
@@ -124,6 +127,7 @@ static const DELAY_TABLE table[] PROGMEM =
 #else
   #error "Invalid baud rate for TELEMETRY_FRSKY_SERIAL"
 #endif
+#endif
 };
 
 const int XMIT_START_ADJUSTMENT = 4;
@@ -135,6 +139,7 @@ const int XMIT_START_ADJUSTMENT = 4;
 
 static const DELAY_TABLE PROGMEM table[] =
 {
+#ifdef TELEMETRY_FRSKY_SOFTSERIAL_PIN
   //  baud    rxcenter    rxintra    rxstop  tx
 #if TELEMETRY_FRSKY_SERIAL==115200
   { 115200,   3,          21,        21,     18,     },
@@ -162,6 +167,7 @@ static const DELAY_TABLE PROGMEM table[] =
   { 300,      4759,       9523,      9523,   9520,   },
 #else
   #error "Invalid baud rate for TELEMETRY_FRSKY_SERIAL"
+#endif
 #endif
 };
 
