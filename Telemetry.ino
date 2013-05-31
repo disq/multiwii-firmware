@@ -22,6 +22,8 @@
 
 #if defined(TELEMETRY_FRSKY)
 
+#define OPENTX_TELEMETRY // define if using OpenTx. Use special OpenTx calculations for altitude and gps speed. Comment out for FrSky Telemetry Display
+
 #ifdef TELEMETRY_FRSKY_SOFTSERIAL_PIN
 
 #include "SendOnlySoftwareSerial.h"
@@ -43,7 +45,8 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
   #define ID_Fuel_level         0x04
   #define ID_Temperature2       0x05
   #define ID_Volt               0x06
-  #define ID_Altitude           0x10
+  #define ID_Altitude_bp        0x10
+  #define ID_Altitude_ap        0x21
   #define ID_GPS_speed_bp       0x11
   #define ID_GPS_speed_ap       0x19
   #define ID_Longitude_bp       0x12
@@ -78,27 +81,33 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
          // Data sent every 250ms
          lastTime = millis();
          tele_loop++;
-         send_Voltage_ampere();
-         send_Accel();
+//         send_Accel();
+
          // Data sent every 1s
          switch (tele_loop) {
             case 1:
-               send_Num_Sat();
                send_GPS_longitude();
+               send_Altitude();
+               send_Course();
+               send_Accel();
             break;
             case 2:
-               send_Altitude();
                send_RPM();
                send_GPS_speed();
+               send_Voltage_ampere();
             break;
             case 3:
                send_Num_Sat();
                send_GPS_latitude();
-            break;
+//               send_Distance();
+               send_GPS_altitude();
+               send_Accel();
+           break;
             case 4:
                send_Temperature();
                send_RPM();
                send_Time();
+               send_Voltage_ampere();
                tele_loop = 0;
             break;
             default:
@@ -155,53 +164,56 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
       write_FrSky8(Protocol_Tail);
    }
 
+   static void inline sendTwoPart(uint8_t bpId, uint8_t apId, float value, uint16_t resolution = 100)
+   {
+         int16_t bpVal;
+         uint16_t apVal;
+
+         bpVal = floor(value); // value before the decimal point ("bp" is "before point")
+         apVal = (value - int(value)) * resolution; // value after the decimal point
+
+         sendDataHead(bpId);
+         write_FrSky16(bpVal);
+         sendDataHead(apId);
+         write_FrSky16(apVal);
+   }
+
+
    //*********************************************************************************
-   //-----------------   Telemetrie Data   ------------------------------------------
+   //-----------------   Telemetry Data   -----------------------------------------
    //*********************************************************************************
 
    // GPS altitude
    void inline send_GPS_altitude(void)
    {
-      if (f.GPS_FIX && GPS_numSat >= 4)
-      {
-         int16_t Data_GPS_altitude_bp;
-         uint16_t Data_GPS_altitude_ap;
-
-         Data_GPS_altitude_bp = GPS_altitude;
-         Data_GPS_altitude_ap = 0;
-
-         sendDataHead(ID_GPS_Altitude_bp);
-         write_FrSky16(Data_GPS_altitude_bp);
-         sendDataHead(ID_GPS_Altitude_ap);
-         write_FrSky16(Data_GPS_altitude_ap);
-      }
+      if (f.GPS_FIX && GPS_numSat >= 4) sendTwoPart(ID_GPS_Altitude_bp, ID_GPS_Altitude_ap, GPS_altitude);
    }
 
    // Temperature
    void inline send_Temperature(void)
    {
-#if BARO
-      int16_t Data_Temperature1;
-      int16_t Data_Temperature2;
+#if defined(BARO)
+       int16_t Data_Temperature1;
 
-      Data_Temperature1 = baroTemperature / 100;
-      Data_Temperature2 = 0;
-      sendDataHead(ID_Temperature1);
-      write_FrSky16(Data_Temperature1);
-      sendDataHead(ID_Temperature2);
-      write_FrSky16(Data_Temperature2);
-#endif
+       Data_Temperature1 = baroTemperature / 100;
+       sendDataHead(ID_Temperature1);
+       write_FrSky16(Data_Temperature1);
+//      sendDataHead(ID_Temperature2);
+//      write_FrSky16(0);
+ #endif
    }
 
    // RPM
    void inline send_RPM(void)
    {
+#if defined(KV_MOTOR)
       uint16_t Data_RPM = 0;
 
       Data_RPM = rpm;
 
       sendDataHead(ID_RPM);
       write_FrSky16(Data_RPM);
+#endif
    }
 
    // Fuel level
@@ -209,7 +221,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
    {
       uint16_t Data_Num_Sat;
 
-         Data_Num_Sat = (GPS_numSat / 2) * 25;
+     Data_Num_Sat = (GPS_numSat / 2) * 25;
 
       sendDataHead(ID_Fuel_level);
       write_FrSky16(Data_Num_Sat);
@@ -220,12 +232,8 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
    {
       if (f.GPS_FIX_HOME)
       {
-         int16_t Data_Distance;
-
-         Data_Distance = GPS_distanceToHome; // Distance to home alias Temp2
-
-         sendDataHead(ID_Altitude);
-         write_FrSky16(Data_Distance);
+      sendDataHead(ID_Temperature2);
+      write_FrSky16(GPS_distanceToHome); // Distance to home alias Temp2
       }
    }
 
@@ -247,31 +255,27 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
    // Altitude
    void inline send_Altitude(void)
    {
-    #if defined BARO
-      int16_t Data_altitude;
-      Data_altitude = alt.EstAlt / 100; // - Start_altitude;
-      sendDataHead(ID_Altitude);
-      write_FrSky16(Data_altitude);
-    #endif
+#if defined(BARO)
+#if defined(OPENTX_TELEMETRY)
+         sendDataHead(ID_Altitude_bp);
+         write_FrSky16(round(alt.EstAlt / 100) - 677 /*Arbitrary constant tested with OpenTx r2324*/);
+// ID_Altitude_ap doesn't work/unused with OpenTx
+#else
+      sendTwoPart(ID_Altitude_bp, ID_Altitude_ap, alt.EstAlt / 100);
+#endif
+#endif
    }
 
    // GPS speed
    void inline send_GPS_speed(void)
    {
-      uint16_t Data_GPS_speed_bp;
-      uint16_t Data_GPS_speed_ap;
-      uint16_t temp;
-
       if (f.GPS_FIX && GPS_numSat >= 4)
       {
-         temp = (GPS_speed * 40) / 203;
-         Data_GPS_speed_bp = temp / 10;
-         Data_GPS_speed_ap = temp - Data_GPS_speed_bp * 10;
-
-         sendDataHead(ID_GPS_speed_bp);
-         write_FrSky16(Data_GPS_speed_bp);
-         sendDataHead(ID_GPS_speed_ap);
-         write_FrSky16(Data_GPS_speed_ap);
+#if defined(OPENTX_TELEMETRY)
+        sendTwoPart(ID_GPS_speed_bp, ID_GPS_speed_ap, GPS_speed * 0.036 /*cm/s to km/h*/ * 0.5449 /* Arbitrary constant tested with OpenTx r2324 */ );
+#else
+        sendTwoPart(ID_GPS_speed_bp, ID_GPS_speed_ap, GPS_speed * 0.0194384449); // cm/s to knots
+#endif
       }
    }
 
@@ -284,8 +288,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
 
       if (f.GPS_FIX && GPS_numSat >= 4)
          {
-         float lon = GPS_coord[LON] / 10000000.0f * 100;
-         if (lon<0) lon = -lon; // abs() doesnt work?
+         float lon = fabs(GPS_coord[LON] / 10000000.0f * 100);
          Data_Longitude_bp = lon;
          Data_Longitude_ap = (lon-int(lon))*10000;
          Data_E_W = GPS_coord[LON] < 0 ? 'W' : 'E';
@@ -307,8 +310,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
 
       if (f.GPS_FIX && GPS_numSat >= 4)
          {
-         float lat = GPS_coord[LAT] / 10000000.0f * 100;
-         if (lat<0) lat = -lat; // abs() doesnt work?
+         float lat = fabs(GPS_coord[LAT] / 10000000.0f * 100);
          Data_Latitude_bp = lat;
          Data_Latitude_ap = (lat-int(lat))*10000;
          Data_N_S = GPS_coord[LAT] < 0 ? 'S' : 'N';
@@ -325,16 +327,8 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
    // Course
    void inline send_Course(void)
    {
-      uint16_t Data_Course_bp;
-      uint16_t Data_Course_ap;
-
-      Data_Course_bp = att.heading;
-      Data_Course_ap = 0;
-
-      sendDataHead(ID_Course_bp);
-      write_FrSky16(Data_Course_bp);
-      sendDataHead(ID_Course_ap);
-      write_FrSky16(Data_Course_ap);
+     sendDataHead(ID_Course_bp);
+     write_FrSky16(att.heading<0 ? att.heading+360 : att.heading);
    }
 
    // Time
@@ -379,7 +373,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
    // Voltage (Ampere Sensor)
    void inline send_Voltage_ampere(void)
    {
-#ifdef VBAT
+#if defined(VBAT)
       uint16_t Data_Voltage_vBat_bp;
       uint16_t Data_Voltage_vBat_ap;
       uint16_t Data_Voltage_I_Motor;
@@ -404,7 +398,7 @@ static SendOnlySoftwareSerial telemSerial(TELEMETRY_FRSKY_SOFTSERIAL_PIN, true, 
 
 void init_telemetry()
 {
-#ifdef TELEMETRY_FRSKY_SOFTSERIAL_PIN
+#if defined(TELEMETRY_FRSKY_SOFTSERIAL_PIN)
   telemSerial.begin(TELEMETRY_FRSKY_SERIAL);
 #endif
 }
