@@ -602,7 +602,7 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
      #else
          frpm = ((float) rpm * VBATNOMINAL * KV_MOTOR) / ((float) NUMBER_MOTOR * 300.0 * (float) (MAXTHROTTLE - MINCOMMAND));
      #endif
-     rpm = (uint16_t) frpm);
+     rpm = (uint16_t) frpm;
      } else {
      rpm = 0;
      }
